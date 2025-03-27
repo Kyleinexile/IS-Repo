@@ -1,0 +1,46 @@
+# ESCO Skills Processing Workflow
+
+## Overview
+This workflow extracts, processes, and structures skills data from the European Skills, Competences, Qualifications and Occupations (ESCO) dataset. The processed data will be used as part of a larger project to create a taxonomy of skills for military operational needs by matching these skills to military occupational specialties.
+
+## What This Workflow Does
+
+### Data Acquisition
+The workflow begins by fetching the raw ESCO dataset from a GitHub repository. This dataset contains thousands of skills, competencies, and occupations in a standardized format used across the European Union.
+
+### Data Processing and Transformation
+The core of this workflow performs several key transformations on the ESCO data:
+
+1. **Filtering**: Isolates only entries with `skillType: "skill/competence"`, removing occupations and other entry types
+2. **Verb Extraction**: Extracts the first word from each skill name, which is typically a verb describing the action
+3. **Alternate Labels Processing**: Parses alternate phrasings of skills into a structured format
+4. **Keyword Extraction**: Analyzes each skill's name, description, and alternate labels to identify the most significant keywords based on frequency
+5. **Searchable Text Creation**: Generates a consolidated text field that combines all relevant information about each skill
+6. **Batch Processing**: Handles the data in smaller chunks to prevent memory issues with large datasets
+
+### Data Storage
+The processed data is formatted into a clean, structured JSON file and stored:
+1. In the n8n workflow: Saved to a GitHub repository for version control and sharing
+2. In the Python equivalent: Saved to a local directory
+
+## Technical Implementation Details
+
+### n8n Nodes
+The workflow consists of four main nodes:
+
+1. **HTTP Request Node**: Retrieves the raw ESCO data from GitHub
+2. **ESCO Processing Function**: Transforms and structures the skills data  
+3. **GitHub Prep Function**: Formats the data for storage and generates a unique filename
+4. **GitHub Node**: Saves the processed data to a GitHub repository
+
+### Data Structure Transformation
+The raw ESCO data is transformed from its original format into a more focused structure:
+
+**Original Format (sample):**
+```json
+{
+  "skillType": "skill/competence",
+  "skillName": "manage musical staff",
+  "alternateLabels": "manage staff of music\ncoordinate duties of musical staff\nmanage music staff\ndirect musical staff",
+  "description": "Assign and manage staff tasks in areas such as scoring, arranging, copying music and vocal coaching."
+}
