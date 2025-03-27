@@ -1,0 +1,155 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        -160
+      ],
+      "id": "45b3e345-d2ae-448e-b61b-20db563e2d35",
+      "name": "When clicking ‘Test workflow’"
+    },
+    {
+      "parameters": {
+        "url": "https://raw.githubusercontent.com/Kyleinexile/IS-Repo/refs/heads/main/ESCO.json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -220,
+        -160
+      ],
+      "id": "6affb83d-1be2-4728-a92a-66a20614f17e",
+      "name": "Github Pull",
+      "notes": "# What this node does\nFetches raw ESCO skills data from the GitHub repository.\n\n# Input\nNone - this is the starting point of the workflow.\n\n# Processing\nSends an HTTP GET request to retrieve the ESCO JSON file.\n\n# Output\nRaw JSON data containing all ESCO entries."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.myNewField = 1;\n}\n// Process ESCO data with batching for reliability\nconst rawData = items[0].json.data;\n\n// Parse the JSON string if needed\nlet escoData;\ntry {\n  escoData = typeof rawData === 'string' ? JSON.parse(rawData) : rawData;\n} catch (error) {\n  console.log('Error parsing JSON:', error.message);\n  return [{ json: { error: 'Failed to parse ESCO data' } }];\n}\n\nconsole.log(`Total ESCO entries: ${escoData.length}`);\n\n// Define batch size\nconst batchSize = 1000;\nconst totalBatches = Math.ceil(escoData.length / batchSize);\n\n// Process only skills (not competences) for better performance\nconst skillEntries = escoData.filter(entry => \n  entry.skillType === 'skill/competence'\n);\n\nconsole.log(`Found ${skillEntries.length} skill/competence entries`);\n\n// Process in smaller batches\nconst processedSkills = [];\nfor (let i = 0; i < skillEntries.length; i += batchSize) {\n  const batchEnd = Math.min(i + batchSize, skillEntries.length);\n  console.log(`Processing batch ${Math.floor(i/batchSize) + 1}/${totalBatches}: entries ${i} to ${batchEnd-1}`);\n  \n  const batch = skillEntries.slice(i, batchEnd);\n  \n  // Process each skill in the batch\n  const processedBatch = batch.map(skill => {\n    try {\n      // Extract the verb (first word of skill name)\n      const skillNameWords = skill.skillName ? skill.skillName.trim().toLowerCase().split(/\\s+/) : [];\n      const verb = skillNameWords.length > 0 ? skillNameWords[0] : '';\n      \n      // Extract alternate labels\n      const alternateLabels = skill.alternateLabels ? \n        skill.alternateLabels.split('\\n').map(label => label.trim()).filter(Boolean) : \n        [];\n      \n      // Create a search text that combines all relevant fields\n      const searchText = [\n        skill.skillName || '',\n        alternateLabels.join(' '),\n        skill.description || ''\n      ].join(' ').toLowerCase();\n      \n      // Extract keywords from all text fields\n      const allWords = searchText.split(/\\s+/);\n      const commonWords = ['and', 'or', 'the', 'a', 'an', 'in', 'on', 'at', 'to', 'for', 'with', 'by', 'of', 'such', 'as'];\n      const filteredWords = allWords.filter(word => \n        word && word.length > 3 && !commonWords.includes(word)\n      );\n      \n      // Count word frequencies\n      const wordFreq = {};\n      filteredWords.forEach(word => {\n        wordFreq[word] = (wordFreq[word] || 0) + 1;\n      });\n      \n      // Sort by frequency and get top keywords\n      const keywords = Object.entries(wordFreq)\n        .sort((a, b) => b[1] - a[1])\n        .slice(0, 20)\n        .map(entry => entry[0]);\n      \n      return {\n        skillId: skill.id || '',\n        skillName: skill.skillName || '',\n        description: skill.description || '',\n        verb: verb,\n        alternateLabels: alternateLabels,\n        keywords: keywords,\n        searchText: searchText\n      };\n    } catch (error) {\n      console.log(`Error processing skill \"${skill.skillName}\": ${error.message}`);\n      return {\n        error: error.message,\n        skillName: skill.skillName || 'Unknown'\n      };\n    }\n  });\n  \n  processedSkills.push(...processedBatch);\n  console.log(`Batch complete. Total processed: ${processedSkills.length}/${skillEntries.length}`);\n}\n\nconsole.log(`ESCO processing complete. Processed ${processedSkills.length} skills.`);\n\n// Prepare the output\nconst outputData = {\n  processedEscoSkills: processedSkills,\n  metadata: {\n    totalEntries: escoData.length,\n    processedSkills: processedSkills.length,\n    processingDate: new Date().toISOString()\n  }\n};\n\n// Return the processed data for next node\nreturn [{\n  json: outputData\n}];\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -60,
+        -160
+      ],
+      "id": "cab1b711-79c6-4d57-96fc-bbc68138b04e",
+      "name": "ESCO Processing",
+      "notes": "# What this node does\nProcesses the raw ESCO data to extract and structure skills information.\n\n# Input\nRaw ESCO JSON data from the HTTP Request node.\n\n# Processing\n1. Parses the JSON data\n2. Filters for entries with skillType = 'skill/competence'\n3. Processes data in batches to prevent memory issues\n4. For each skill:\n   - Extracts the verb (first word of skill name)\n   - Parses alternate labels\n   - Creates searchable text from all fields\n   - Identifies keywords based on frequency\n   - Structures data in a consistent format\n\n# Output\nStructured object containing processed skills and metadata."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare for GitHub storage with improved error handling\n// First, safely get the processed data\nlet processedData;\ntry {\n  processedData = items[0]?.json || {};\n  \n  console.log(\"Data received from previous node:\", \n    JSON.stringify({\n      type: typeof processedData,\n      hasProcessedEscoSkills: !!processedData.processedEscoSkills,\n      metadata: processedData.metadata || \"Not present\"\n    })\n  );\n  \n  // Ensure processedEscoSkills exists and is an array\n  if (!processedData.processedEscoSkills) {\n    console.log(\"No processedEscoSkills found, creating empty array\");\n    processedData.processedEscoSkills = [];\n  }\n  \n  // Ensure metadata exists\n  if (!processedData.metadata) {\n    console.log(\"No metadata found, creating default metadata\");\n    processedData.metadata = {\n      totalEntries: 0,\n      processedSkills: processedData.processedEscoSkills.length,\n      processingDate: new Date().toISOString()\n    };\n  }\n} catch (error) {\n  console.log(\"Error accessing input data:\", error.message);\n  // Create fallback data\n  processedData = {\n    processedEscoSkills: [],\n    metadata: {\n      error: \"Failed to process input data: \" + error.message,\n      processingDate: new Date().toISOString()\n    }\n  };\n}\n\n// Generate a JSON string with processed data\nconst jsonString = JSON.stringify(processedData, null, 2);\n\n// Create a timestamp for the filename\nconst timestamp = new Date().toISOString().replace(/:/g, '-').replace(/\\..+/, '');\n\nreturn [{\n  json: {\n    content: jsonString,\n    filePath: `processed-esco-skills-${timestamp}.json`,\n    commitMessage: \"Add processed ESCO skills data\"\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        100,
+        -160
+      ],
+      "id": "74148f6d-8427-4413-998b-c9d6a02f8dde",
+      "name": "GH Prep",
+      "notes": "# What this node does\nPrepares the processed ESCO data for GitHub storage.\n\n# Input\nStructured object containing processed skills from the previous node.\n\n# Processing\n1. Creates a JSON string from the processed data\n2. Generates a unique filename using the current timestamp\n3. Prepares the necessary GitHub parameters (content, path, message)\n\n# Output\nObject containing:\n- content: JSON string to store\n- filePath: Unique filename for GitHub storage\n- commitMessage: Description of the update"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "file",
+        "owner": {
+          "__rl": true,
+          "value": "Kyleinexile",
+          "mode": "list",
+          "cachedResultName": "Kyleinexile",
+          "cachedResultUrl": "https://github.com/Kyleinexile"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "IS-Repo",
+          "mode": "list",
+          "cachedResultName": "IS-Repo",
+          "cachedResultUrl": "https://github.com/Kyleinexile/IS-Repo"
+        },
+        "filePath": "{{$node[\"GH Prep\"].json.filePath}}",
+        "fileContent": "={{$node[\"GH Prep\"].json.content}}\n",
+        "commitMessage": "{{$node[\"GH Prep\"].json.commitMessage}}"
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "position": [
+        260,
+        -160
+      ],
+      "id": "6b2c94e3-65f0-4e8a-b6e1-18680eb42b55",
+      "name": "GitHub",
+      "credentials": {
+        "githubOAuth2Api": {
+          "id": "ZTHP0fnC7Mg1hvxD",
+          "name": "GitHub account"
+        }
+      },
+      "notes": "# What this node does\nSaves the processed ESCO data to GitHub as a JSON file.\n\n# Input\nGitHub parameters from the previous node (content, path, message).\n\n# Processing\n1. Authenticates with GitHub\n2. Creates a new file in the repository\n3. Writes the processed data with the provided filename\n\n# Output\nStatus information from the GitHub API response."
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Github Pull",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Github Pull": {
+      "main": [
+        [
+          {
+            "node": "ESCO Processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ESCO Processing": {
+      "main": [
+        [
+          {
+            "node": "GH Prep",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GH Prep": {
+      "main": [
+        [
+          {
+            "node": "GitHub",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "e48ff661-8045-4ea5-b51f-d60aae65dc0e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "43f1f94ffedd314979634e3905a489c007c9c4f186960aec85160db74a936486"
+  },
+  "id": "0JqdW4gul88Rd8kb",
+  "tags": []
+}

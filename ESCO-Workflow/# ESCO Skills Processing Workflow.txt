@@ -1,0 +1,26 @@
+# ESCO Skills Processing Workflow
+
+## Overview
+This workflow extracts and processes skills data from the European Skills, Competences, Qualifications and Occupations (ESCO) dataset. It prepares the data for matching with military occupational specialties.
+
+## Workflow Steps
+1. **Data Acquisition**: Fetches raw ESCO data from GitHub
+2. **Data Processing**: Extracts skills, their verbs, keywords, and creates searchable text
+3. **Data Storage**: Saves the processed data for later use
+
+## Using This Workflow
+
+### Option 1: Run in n8n
+1. Import the `esco-workflow.json` file into n8n
+2. Configure the GitHub node with your credentials
+3. Run the workflow
+
+### Option 2: Run the Python Script
+1. Install required dependencies: `pip install requests`
+2. Run the script: `python esco_processor.py`
+3. Find the output in the `processed_data` directory
+
+## Expected Output
+The workflow produces a JSON file containing:
+- `processedEscoSkills`: Array of processed skill objects
+- `metadata`: Processing information including date and counts
