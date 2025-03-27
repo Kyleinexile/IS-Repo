@@ -44,3 +44,28 @@ The raw ESCO data is transformed from its original format into a more focused st
   "alternateLabels": "manage staff of music\ncoordinate duties of musical staff\nmanage music staff\ndirect musical staff",
   "description": "Assign and manage staff tasks in areas such as scoring, arranging, copying music and vocal coaching."
 }
+{
+  "skillId": "",
+  "skillName": "manage musical staff",
+  "description": "Assign and manage staff tasks in areas such as scoring, arranging, copying music and vocal coaching.",
+  "verb": "manage",
+  "alternateLabels": [
+    "manage staff of music",
+    "coordinate duties of musical staff",
+    "manage music staff",
+    "direct musical staff"
+  ],
+  "keywords": [
+    "musical",
+    "staff",
+    "manage",
+    "music",
+    "arranging",
+    "scoring",
+    "tasks",
+    "vocal",
+    "coaching",
+    "copying"
+  ],
+  "searchText": "manage musical staff manage staff of music coordinate duties of musical staff manage music staff direct musical staff assign and manage staff tasks in areas such as scoring, arranging, copying music and vocal coaching."
+}
