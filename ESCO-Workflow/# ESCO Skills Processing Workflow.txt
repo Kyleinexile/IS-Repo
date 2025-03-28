@@ -1,26 +1,36 @@
 # ESCO Skills Processing Workflow
 
 ## Overview
-This workflow extracts and processes skills data from the European Skills, Competences, Qualifications and Occupations (ESCO) dataset. It prepares the data for matching with military occupational specialties.
+This workflow extracts and processes skills data from the European Skills, Competences, Qualifications and Occupations (ESCO) dataset. It prepares the data for matching with military occupational specialties by preserving key fields (e.g., conceptUri, altLabels) and adding searchable text and keywords.
 
 ## Workflow Steps
-1. **Data Acquisition**: Fetches raw ESCO data from GitHub
-2. **Data Processing**: Extracts skills, their verbs, keywords, and creates searchable text
-3. **Data Storage**: Saves the processed data for later use
+1. **Data Acquisition**  
+   - Fetches raw ESCO data from a GitHub repository.
+   - Focuses on entries labeled `skillType: "skill/competence"`.
+
+2. **Data Processing**  
+   - Converts `preferredLabel` to `skillName` and `conceptUri` to `skillId`.
+   - Extracts a verb (the first word) from each skill name.
+   - Parses `altLabels` into an array of synonyms.
+   - Generates keywords from high-frequency terms and builds a `searchText` field.
+
+3. **Data Storage**  
+   - Saves the processed results (including `processedEscoSkills` and metadata) as JSON.
+   - Creates a single file in the GitHub repo or a local directory, depending on the chosen approach.
 
 ## Using This Workflow
 
 ### Option 1: Run in n8n
-1. Import the `esco-workflow.json` file into n8n
-2. Configure the GitHub node with your credentials
-3. Run the workflow
+1. Import the `esco-workflow.json` file into n8n.
+2. Configure the GitHub node with valid credentials.
+3. Run the workflow to automatically fetch ESCO data, process it, and commit the output to your GitHub repo.
 
 ### Option 2: Run the Python Script
 1. Install required dependencies: `pip install requests`
 2. Run the script: `python esco_processor.py`
-3. Find the output in the `processed_data` directory
+3. Find the resulting JSON file in the `processed_data` directory.
 
 ## Expected Output
 The workflow produces a JSON file containing:
-- `processedEscoSkills`: Array of processed skill objects
-- `metadata`: Processing information including date and counts
+- **processedEscoSkills**: An array of transformed skill objects (skillId, skillName, verb, keywords, etc.).
+- **metadata**: Includes timestamps, total entries, and other processing info.
