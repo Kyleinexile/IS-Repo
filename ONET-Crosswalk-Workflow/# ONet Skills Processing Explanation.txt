@@ -1,0 +1,41 @@
+# O*NET Military Crosswalk Processing Workflow
+
+## Overview
+This workflow processes the O*NET Military Transition Search crosswalk data to extract and structure Air Force Specialty Codes (AFSCs) and related information. This processed data will serve as the framework for matching military specialties with civilian skills in our taxonomy creation project.
+
+## What This Workflow Does
+
+### Data Acquisition
+The workflow begins by fetching the O*NET Military Transition Search crosswalk data from GitHub. This dataset contains mappings between military occupation codes and civilian equivalent jobs across different service branches.
+
+### Data Processing and Transformation
+The workflow performs several critical transformations:
+
+1. **CSV Parsing**: Converts the raw CSV data into a structured format
+2. **Military Filter**: Isolates entries related to the Air Force (SVC codes F, X, Y, Z) and Space Force (SVC codes H, L, O, U)
+3. **Data Structuring**: Organizes the relevant fields into a consistent format for each AFSC
+4. **Keyword Extraction**: Analyzes AFSC titles and related civilian occupation titles to identify the most significant keywords
+5. **Search Text Creation**: Generates a consolidated text field for later semantic matching
+
+### Data Storage
+The processed data is formatted as a structured JSON file and stored:
+1. In the n8n workflow: Saved to a GitHub repository
+2. In the Python equivalent: Saved to a local directory
+
+## Technical Implementation Details
+
+### n8n Nodes
+The workflow consists of five main nodes:
+
+1. **HTTP Request Node**: Retrieves the O*NET crosswalk CSV data
+2. **CSV Parse & Filter Node**: Parses the CSV and filters for Air Force entries
+3. **Keyword Extraction Node**: Enhances data with keywords and search text
+4. **GitHub Prep Node**: Formats the data for storage
+5. **GitHub Node**: Saves the processed data to GitHub
+
+### Data Structure Transformation
+The raw crosswalk data is transformed from its original CSV format into a more usable structure:
+
+**Original Format (sample row):**
+```csv
+"F","E","3E7X1","FIRE PROTECTION","1799","1799E200","Fire Protection","A","201109","999912",,,"33-2011",,,,"Firefighters",,,,"33000011","FIREFIGHTERS",,,"33-2011.00",,,,"Firefighters",,,,

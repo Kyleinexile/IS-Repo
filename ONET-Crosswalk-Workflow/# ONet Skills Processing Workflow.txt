@@ -1,0 +1,39 @@
+# Military Skills Taxonomy Project
+
+## Overview
+This repository contains workflows and tools for developing a taxonomy of skills for military operational needs using semantic matching and classification techniques. The project transforms data from multiple sources to create a structured, hierarchical taxonomy that can be used for resource allocation, training program development, and alignment with mission objectives.
+
+## Project Components
+
+### ESCO Skills Processing
+The [ESCO-Workflow](./ESCO-Workflow) processes data from the European Skills, Competences, Qualifications and Occupations dataset to extract structured skill information.
+
+### Military Crosswalk Processing
+The [ONET-Crosswalk-Workflow](./ONET-Crosswalk-Workflow) processes the O*NET Military Transition Search crosswalk to extract Air Force Specialty Codes (AFSCs) and their civilian occupation equivalents.
+
+### Taxonomy Creation (Coming Soon)
+A future workflow will match the processed ESCO skills with AFSCs to create a comprehensive military skills taxonomy.
+
+## Usage
+Each workflow folder contains:
+- A detailed README explaining the workflow
+- The n8n workflow JSON file
+- A Python script that replicates the workflow functionality
+- Sample output data
+
+## Implementation Options
+
+### Using n8n
+The workflows can be imported into n8n and run directly. This requires:
+- Access to an n8n instance
+- GitHub authentication credentials
+- Import of the workflow JSON files
+
+### Using Python
+Alternatively, the included Python scripts can be run independently. These require:
+- Python 3.6+
+- Required packages: `requests`
+- Internet access to fetch the source data
+
+## Project Background
+This project is part of an independent study focusing on developing a taxonomy of skills for military operational needs. It uses semantic matching and classification techniques to align with existing taxonomies such as ESCO, OSN, and O*Net.
