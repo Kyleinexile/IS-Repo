@@ -39,3 +39,17 @@ The raw crosswalk data is transformed from its original CSV format into a more u
 **Original Format (sample row):**
 ```csv
 "F","E","3E7X1","FIRE PROTECTION","1799","1799E200","Fire Protection","A","201109","999912",,,"33-2011",,,,"Firefighters",,,,"33000011","FIREFIGHTERS",,,"33-2011.00",,,,"Firefighters",,,,
+{
+  "afscCode": "3E7X1",
+  "afscTitle": "FIRE PROTECTION",
+  "serviceType": "F",
+  "category": "Enlisted",
+  "onetCodes": ["33-2011.00"],
+  "onetTitles": ["Firefighters"],
+  "socCodes": ["33-2011"],
+  "socTitles": ["Firefighters"],
+  "keywords": ["fire", "protection", "firefighters", "emergency", "safety"],
+  "searchText": "fire protection firefighters",
+  "statusDate": "201109",
+  "endDate": "999912"
+}
