@@ -1,51 +1,72 @@
-# ESCO Skills Processing Workflow
+ESCO Skills Processing Workflow
+==============================
 
-## Overview
-This workflow extracts, processes, and structures skills data from the European Skills, Competences, Qualifications and Occupations (ESCO) dataset. The processed data will be used as part of a larger project to create a taxonomy of skills for military operational needs by matching these skills to military occupational specialties.
+Overview
+--------
+This workflow extracts, processes, and structures skills data from the European Skills, Competences, Qualifications and Occupations (ESCO) dataset. The processed data is used in a larger project to build a military-relevant skills taxonomy, ultimately mapping ESCO skills to specific military occupational specialties.
 
-## What This Workflow Does
+What This Workflow Does
+-----------------------
+Data Acquisition:
+- Fetches the raw ESCO dataset from a GitHub repository.
+- Contains thousands of records on skills, competences, and sometimes knowledge items.
+- Focuses on entries labeled as "skill/competence."
 
-### Data Acquisition
-The workflow begins by fetching the raw ESCO dataset from a GitHub repository. This dataset contains thousands of skills, competencies, and occupations in a standardized format used across the European Union.
+Data Processing and Transformation:
+1. Filtering
+   - Retains only entries where skillType is "skill/competence."
+2. Verb Extraction
+   - Takes the first word from ESCO’s preferredLabel field (e.g., "manage" in "manage musical staff").
+3. Alternate Labels Parsing
+   - Converts the multiline altLabels string into an array of synonyms/phrases.
+4. Keyword Extraction
+   - Combines skill name, description, and alternate labels into one searchText.
+   - Removes short words and basic stopwords, then keeps up to 20 of the most frequent terms as keywords.
+5. Unified Structure
+   - Stores conceptUri as skillId.
+   - Renames preferredLabel to skillName.
+   - Preserves reuseLevel, skillType, and description.
+   - Processes large sets in batches to avoid memory issues.
 
-### Data Processing and Transformation
-The core of this workflow performs several key transformations on the ESCO data:
+Data Storage:
+- Outputs a structured JSON that includes:
+  1. processedEscoSkills: an array of enhanced skill objects.
+  2. metadata: summary info like total entries, count of processed skills, and a timestamp.
 
-1. **Filtering**: Isolates only entries with `skillType: "skill/competence"`, removing occupations and other entry types
-2. **Verb Extraction**: Extracts the first word from each skill name, which is typically a verb describing the action
-3. **Alternate Labels Processing**: Parses alternate phrasings of skills into a structured format
-4. **Keyword Extraction**: Analyzes each skill's name, description, and alternate labels to identify the most significant keywords based on frequency
-5. **Searchable Text Creation**: Generates a consolidated text field that combines all relevant information about each skill
-6. **Batch Processing**: Handles the data in smaller chunks to prevent memory issues with large datasets
+- In n8n, the workflow commits this file to a GitHub repo.
+- A Python equivalent can also save locally for replication or offline use.
 
-### Data Storage
-The processed data is formatted into a clean, structured JSON file and stored:
-1. In the n8n workflow: Saved to a GitHub repository for version control and sharing
-2. In the Python equivalent: Saved to a local directory
+Technical Implementation Details
+-------------------------------
+n8n Nodes:
+1. HTTP Request Node
+   - Retrieves raw ESCO JSON from GitHub.
+2. ESCO Processing Function
+   - Filters data (skillType = "skill/competence"),
+   - Extracts verbs, keywords, alternate labels,
+   - Builds searchText, etc.
+3. GitHub Prep Function
+   - Serializes the processed data as JSON
+   - Defines file path and commit message
+4. GitHub Node
+   - Commits the result into a subfolder in your GitHub repository.
 
-## Technical Implementation Details
-
-### n8n Nodes
-The workflow consists of four main nodes:
-
-1. **HTTP Request Node**: Retrieves the raw ESCO data from GitHub
-2. **ESCO Processing Function**: Transforms and structures the skills data  
-3. **GitHub Prep Function**: Formats the data for storage and generates a unique filename
-4. **GitHub Node**: Saves the processed data to a GitHub repository
-
-### Data Structure Transformation
-The raw ESCO data is transformed from its original format into a more focused structure:
-
-**Original Format (sample):**
-```json
+Data Structure Transformation
+----------------------------
+Original Format (Example):
 {
+  "conceptUri": "http://data.europa.eu/esco/skill/0005c151-5b5a-4a66-8aac-60e734beb1ab",
   "skillType": "skill/competence",
-  "skillName": "manage musical staff",
-  "alternateLabels": "manage staff of music\ncoordinate duties of musical staff\nmanage music staff\ndirect musical staff",
+  "preferredLabel": "manage musical staff",
+  "altLabels": "manage staff of music\ncoordinate duties of musical staff\nmanage music staff\ndirect musical staff",
   "description": "Assign and manage staff tasks in areas such as scoring, arranging, copying music and vocal coaching."
 }
+
+Processed Format (Example):
 {
-  "skillId": "",
+  "skillId": "http://data.europa.eu/esco/skill/0005c151-5b5a-4a66-8aac-60e734beb1ab",
+  "skillType": "skill/competence",
+  "reuseLevel": "sector-specific",
   "skillName": "manage musical staff",
   "description": "Assign and manage staff tasks in areas such as scoring, arranging, copying music and vocal coaching.",
   "verb": "manage",
@@ -56,9 +77,9 @@ The raw ESCO data is transformed from its original format into a more focused st
     "direct musical staff"
   ],
   "keywords": [
-    "musical",
     "staff",
     "manage",
+    "musical",
     "music",
     "arranging",
     "scoring",
@@ -67,5 +88,7 @@ The raw ESCO data is transformed from its original format into a more focused st
     "coaching",
     "copying"
   ],
-  "searchText": "manage musical staff manage staff of music coordinate duties of musical staff manage music staff direct musical staff assign and manage staff tasks in areas such as scoring, arranging, copying music and vocal coaching."
+  "searchText": "manage musical staff ... assign and manage staff tasks ... etc."
 }
+
+In this enhanced structure, fields from ESCO’s original data are retained (e.g., conceptUri, altLabels) while adding a verb field, keywords, and a consolidated searchText to facilitate searching, matching, or classification in downstream tasks.
